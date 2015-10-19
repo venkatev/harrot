@@ -1,11 +1,10 @@
 # coding: utf-8
 lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'harrot/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "harrot"
-  spec.version       = Harrot::VERSION
+  spec.version       = '1.0'
   spec.authors       = ["Vikram Venkatesan"]
   spec.email         = ["s.venkat.vikram@gmail.com"]
   spec.summary       = %q{HTTP Stubbing library}

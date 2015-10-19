@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    harrot (0.0.1)
+    harrot (1.0)
 
 GEM
   remote: https://rubygems.org/
