@@ -1,6 +1,7 @@
 require 'json'
 require 'net/http'
-require 'harrot_client'
+require 'open3'
+require_relative 'harrot_client'
 
 #
 # A lightweight HTTP stub using rack.
@@ -41,7 +42,8 @@ module Harrot
 
       print 'Starting harrot HTTP stub '.colorize(:light_black)
 
-      pid = spawn("exec unicorn -p #{port} #{File.dirname(__FILE__)}/harrot_server.ru > #{LOG_FILE} 2>&1")
+      stdin, stdout, stderr, wait_thrread = Open3.popen3("exec unicorn -p #{port} #{File.dirname(__FILE__)}/harrot_server.ru > #{LOG_FILE} 2>&1")
+      pid = wait_thrread[:pid]
       server_pid(port, pid)
 
       # Wait for the rack server to start
@@ -126,7 +128,7 @@ module Harrot
 
     def self.wait_for_server_startup(port)
       max_wait_time = 10
-      delay = 0.1
+      delay = 0.2
 
       (max_wait_time / delay).to_i.times do
         begin
