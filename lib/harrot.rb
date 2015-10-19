@@ -27,7 +27,6 @@ require 'net/http'
 #   /ping
 #
 class Harrot
-  PID_FILE = 'harrot.pid'
   LOG_FILE = 'harrot.log'
 
   @@stubs = []
@@ -36,11 +35,11 @@ class Harrot
 
   def self.start(port)
     @@port = port
-    stop_server
+    stop(port)
 
     print 'Starting harrot HTTP stub '.colorize(:light_black)
 
-    pid = spawn("exec unicorn -p #{port} #{File.dirname(__FILE__)}/../harrot_server.ru > #{LOG_FILE} 2>&1")
+    pid = spawn("exec unicorn -p #{port} #{File.dirname(__FILE__)}/harrot_server.ru > #{LOG_FILE} 2>&1")
     server_pid(pid)
 
     # Wait for the rack server to start
@@ -52,37 +51,8 @@ class Harrot
     end
   end
 
-  def self.server_pid(pid = nil)
-    if pid.nil?
-      return nil unless File.exists?(PID_FILE)
-      File.read(PID_FILE)
-    else
-      File.open(PID_FILE, 'w') { |f| f.write(pid) }
-    end
-  end
-
-  def self.wait_for_server_startup(port)
-    max_wait_time = 10
-    delay = 0.1
-
-    (max_wait_time / delay).to_i.times do
-      begin
-        Net::HTTP.get_response(URI.parse("http://localhost:#{port}/ping"))
-        @connected = true
-        break
-      rescue Errno::ECONNREFUSED => e
-        print '.'.colorize(:light_black)
-
-        sleep(delay)
-        next
-      end
-    end
-
-    return @connected
-  end
-
-  def self.stop_server
-    pid = server_pid
+  def self.stop(port)
+    pid = server_pid(port)
 
     if pid
       begin
@@ -92,12 +62,8 @@ class Harrot
       end
     end
 
-    delete_server_pid
+    delete_server_pid(port)
     @@is_running = false
-  end
-
-  def self.delete_server_pid
-    File.delete(PID_FILE) if File.exists?(PID_FILE)
   end
 
   def call(env)
@@ -152,5 +118,44 @@ class Harrot
         {'Content-Type' => 'text/html'},
         ["Unknown url '#{req.path_info}'. Forgot to add the stub?"]
     ]
+  end
+
+  private
+
+  def self.wait_for_server_startup(port)
+    max_wait_time = 10
+    delay = 0.1
+
+    (max_wait_time / delay).to_i.times do
+      begin
+        Net::HTTP.get_response(URI.parse("http://localhost:#{port}/ping"))
+        @connected = true
+        break
+      rescue Errno::ECONNREFUSED => e
+        print '.'.colorize(:light_black)
+
+        sleep(delay)
+        next
+      end
+    end
+
+    return @connected
+  end
+
+  def self.server_pid_file(port)
+    "harrot_#{port}.pid"
+  end
+
+  def self.server_pid(port, pid = nil)
+    if pid.nil?
+      return nil unless File.exists?(server_pid_file(port))
+      File.read(server_pid_file(port))
+    else
+      File.open(server_pid_file(port), 'w') { |f| f.write(pid) }
+    end
+  end
+
+  def self.delete_server_pid(port)
+    File.delete(server_pid_file(port)) if File.exists?(server_pid_file(port))
   end
 end

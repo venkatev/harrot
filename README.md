@@ -1,30 +1,29 @@
 # Harrot
-A lightweight HTTP stub using rack.
 
-##### Starting the stub server
-Harrot.start(6789) # Starts the stub listening to the port 6789
+TODO: Write a gem description
 
-##### Adding a stub
-  * Using HTTP: POST to '/stubs/add' with the stub in the format below.
-  * Using ruby API: HarrotClient.add_stub(stub_config)
+## Installation
 
-##### Stub format
-```javascript
-{
-  url: '/api/path1/path2'
-  response: {
-    status: 200 (default),
-    body: "Hello",
-    content_type: 'application/json' (default),
-    headers: (HTTP headers),
-    wait: 0 (Artificial delay in response. Useful to simulating real-world response times)
-  }
-}
-```
+Add this line to your application's Gemfile:
 
-##### Getting all stubs
-  GET /stubs
+    gem 'harrot'
 
-##### Health check
-  /ping
+And then execute:
 
+    $ bundle
+
+Or install it yourself as:
+
+    $ gem install harrot
+
+## Usage
+
+TODO: Write usage instructions here
+
+## Contributing
+
+1. Fork it ( https://github.com/[my-github-username]/harrot/fork )
+2. Create your feature branch (`git checkout -b my-new-feature`)
+3. Commit your changes (`git commit -am 'Add some feature'`)
+4. Push to the branch (`git push origin my-new-feature`)
+5. Create a new Pull Request

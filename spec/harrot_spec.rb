@@ -9,6 +9,10 @@ describe 'harrot' do
     Harrot.start(6543)
   end
 
+  after(:all) do
+    Harrot.stop(6543)
+  end
+
   it 'should add a new stub' do
     HarrotClient.config(port: 6543)
     stub_1 = {
