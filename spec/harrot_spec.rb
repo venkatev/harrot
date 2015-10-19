@@ -10,7 +10,6 @@ describe 'harrot' do
   end
 
   after(:all) do
-    puts 'Stopping'
     Harrot::Server.stop(6543)
   end
 
