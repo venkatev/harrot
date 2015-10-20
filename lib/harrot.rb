@@ -28,6 +28,7 @@ require_relative 'harrot_client'
 # Health check:
 #   /ping
 #
+$stdout.sync = true
 module Harrot
   class Server
     LOG_FILE = 'harrot.log'
@@ -40,11 +41,11 @@ module Harrot
       @@port = port
       stop(port)
 
-      print 'Starting harrot HTTP stub '.colorize(:light_black)
+      print "Starting harrot HTTP stub (port: #{port})".colorize(:light_black)
 
-      stdin, stdout, stderr, wait_thrread = Open3.popen3("exec unicorn -p #{port} #{File.dirname(__FILE__)}/harrot_server.ru > #{LOG_FILE} 2>&1")
+      stdin, stdout, stderr, wait_thrread = Open3.popen3("exec rackup -p #{port} #{File.dirname(__FILE__)}/harrot_server.ru > #{LOG_FILE} 2>&1")
       pid = wait_thrread[:pid]
-      server_pid(port, pid)
+      get_server_pid(port, pid)
 
       # Wait for the rack server to start
       if wait_for_server_startup(port)
@@ -56,17 +57,19 @@ module Harrot
     end
 
     def self.stop(port)
-      pid = server_pid(port)
+      pid = get_server_pid(port)
 
       if pid
         begin
-          Process.kill('SIGKILL', pid.to_i)
+          puts "\nStopping harrot (port: #{port})".colorize(:light_black)
+          Process.kill('SIGKILL', pid)
         rescue Errno::ESRCH
           # process exited normally
         end
+
+        delete_server_pid(port)
       end
 
-      delete_server_pid(port)
       @@is_running = false
     end
 
@@ -102,18 +105,25 @@ module Harrot
         if req.path_info.include?(stub['url'])
           response_stub = stub['response'] || {}
 
-          if response_stub['wait']
-            # Artificial delay in response.
-            sleep(response_stub['wait'].to_i)
-          end
-
           response_body = response_stub['body']
 
-          return [
+          response_prep = [
               response_stub['status'] || 200,
               {'Content-Type' => 'application/json'}.merge(response_stub['headers'] || {}),
               [response_body || '(No content)']
           ]
+
+          if response_stub['wait']
+            # Artificial delay in response.
+            Thread.new do
+              sleep(response_stub['wait'].to_i)
+              env['async.callback'].call(response_prep)
+            end
+
+            throw :async
+          end
+
+          return response_prep
         end
       end
 
@@ -150,10 +160,10 @@ module Harrot
       "harrot_#{port}.pid"
     end
 
-    def self.server_pid(port, pid = nil)
+    def self.get_server_pid(port, pid = nil)
       if pid.nil?
         return nil unless File.exists?(server_pid_file(port))
-        File.read(server_pid_file(port))
+        File.read(server_pid_file(port)).to_i
       else
         File.open(server_pid_file(port), 'w+') { |f| f.write(pid) }
       end
