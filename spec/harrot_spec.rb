@@ -1,13 +1,13 @@
 require 'rubygems'
 require 'colorize'
 
-require_relative '../lib/harrot'
-require_relative '../lib/harrot_client'
+require "#{File.dirname(__FILE__)}/../lib/harrot"
+require "#{File.dirname(__FILE__)}/../lib/harrot_client"
 
 describe 'harrot' do
   before(:all) do
     Harrot::Server.start(6543)
-    Harrot::Client.config(port: 6543)
+    Harrot::Client.config('localhost', 6543)
   end
 
   after(:all) do
@@ -32,6 +32,8 @@ describe 'harrot' do
 
   it 'should server requests concurrently' do
     delay_per_request = 2
+    num_parallel_requests = 3
+
     stub_1 = {
         url: '/test123',
         response: {
@@ -44,7 +46,6 @@ describe 'harrot' do
 
     start_time = Time.now
     threads = []
-    num_parallel_requests = 3
 
     num_parallel_requests.times do
       t = Thread.new do
@@ -58,7 +59,7 @@ describe 'harrot' do
 
     time_taken = Time.now - start_time
 
-    # If responding serially, the total time would be at least 3 seconds (3 requests * 1 second each).
+    # If responding serially, the total time would be at least 6 seconds (3 requests * 2 second each).
     # Asserting the total time is within that.
     expect(time_taken).to be < (num_parallel_requests * delay_per_request)
   end

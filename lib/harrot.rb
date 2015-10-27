@@ -1,7 +1,8 @@
 require 'json'
 require 'net/http'
 require 'open3'
-require_relative 'harrot_client'
+require 'rack/async'
+require "#{File.dirname(__FILE__)}/harrot_client"
 
 #
 # A lightweight HTTP stub using rack.
@@ -28,7 +29,7 @@ require_relative 'harrot_client'
 # Health check:
 #   /ping
 #
-$stdout.sync = true
+
 module Harrot
   class Server
     LOG_FILE = 'harrot.log'
@@ -92,6 +93,7 @@ module Harrot
       elsif req.path_info == '/stubs/add' && req.request_method == 'POST'
         # Add new stub
         stub_json = req.body.read
+        puts "Adding stub #{JSON.parse(stub_json)['url']}"
         @@stubs << JSON.parse(stub_json)
         return [
             200,
@@ -102,9 +104,9 @@ module Harrot
 
       # Get the first matching stub and return the response.
       @@stubs.each do |stub|
-        if req.path_info.include?(stub['url'])
+        if stub_match?(stub, req.path_info)
+          puts "Request #{req.path_info} matches #{stub['url']}"
           response_stub = stub['response'] || {}
-
           response_body = response_stub['body']
 
           response_prep = [
@@ -121,9 +123,9 @@ module Harrot
             end
 
             throw :async
+          else
+            return response_prep
           end
-
-          return response_prep
         end
       end
 
@@ -132,6 +134,14 @@ module Harrot
           {'Content-Type' => 'text/html'},
           ["Unknown url '#{req.path_info}'. Forgot to add the stub?"]
       ]
+    end
+
+    def stub_match?(stub, url)
+      if stub['exact_match']
+        stub['url'] == url
+      else
+        url.include?(stub['url'])
+      end
     end
 
     private

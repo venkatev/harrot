@@ -1,4 +1,4 @@
 source 'https://rubygems.org'
 
-gem 'async-rack'
+gem 'rack-async'
 gem 'colorize'

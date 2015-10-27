@@ -1,4 +1,3 @@
-require 'async-rack'
-require_relative 'harrot'
+require "#{File.dirname(__FILE__)}/harrot"
 
 run Harrot::Server.new
